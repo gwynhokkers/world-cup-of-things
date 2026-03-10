@@ -1,0 +1,27 @@
+{
+  "name": "world-cup-of-things",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "nuxt build",
+    "dev": "nuxt dev",
+    "generate": "nuxt generate",
+    "preview": "nuxt preview",
+    "postinstall": "nuxt prepare",
+    "db:generate": "nuxt db generate",
+    "db:migrate": "nuxt db migrate"
+  },
+  "packageManager": "bun@1.1.0",
+  "dependencies": {
+    "@libsql/client": "^0.14.0",
+    "@nuxt/image": "^2.0.0",
+    "@nuxt/ui": "^4.5.1",
+    "@nuxthub/core": "^0.10.7",
+    "@pinia/nuxt": "^0.11.3",
+    "drizzle-kit": "^0.31.0",
+    "drizzle-orm": "^0.45.0",
+    "nuxt": "^4.3.1",
+    "nuxt-auth-utils": "^0.5.29",
+    "nuxt-authorization": "^0.3.5"
+  }
+}
