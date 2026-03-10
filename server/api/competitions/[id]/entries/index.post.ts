@@ -1,7 +1,7 @@
 import { db, schema } from '@nuxthub/db'
 import { eq } from 'drizzle-orm'
 import { editCompetition } from '~/utils/abilities'
-import { requireUser } from '~/server/utils/auth'
+import { requireUser } from '~~/server/utils/auth'
 
 export default defineEventHandler(async (event) => {
   const user = await requireUser(event)
