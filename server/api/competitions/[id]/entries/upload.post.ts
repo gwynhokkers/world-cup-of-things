@@ -3,7 +3,7 @@ import { readFormData, createError } from 'h3'
 import { db, schema } from '@nuxthub/db'
 import { eq } from 'drizzle-orm'
 import { editCompetition } from '~/utils/abilities'
-import { requireUser } from '~/server/utils/auth'
+import { requireUser } from '~~/server/utils/auth'
 
 const MAX_SIZE = '10MB'
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp']
