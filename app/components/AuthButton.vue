@@ -56,7 +56,7 @@
 </template>
 
 <script setup lang="ts">
-import { manageUsers as manageUsersAbility } from '~~/shared/utils/abilities'
+import { manageUsers as manageUsersAbility } from '~/utils/abilities'
 
 const { loggedIn, user, clear } = useUserSession()
 
