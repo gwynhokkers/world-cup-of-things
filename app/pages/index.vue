@@ -29,12 +29,7 @@ function clearSession() {
             </UButton>
           </template>
           <template v-else>
-            <UButton as="a" href="/auth/github" variant="outline" size="sm">
-              Login with GitHub
-            </UButton>
-            <UButton as="a" href="/auth/google" variant="outline" size="sm">
-              Login with Google
-            </UButton>
+            <AuthButton />
           </template>
         </nav>
       </div>
@@ -55,9 +50,7 @@ function clearSession() {
             </UButton>
           </NuxtLink>
           <template v-else>
-            <UButton as="a" href="/auth/github" size="lg">
-              Sign in with GitHub to create
-            </UButton>
+            <AuthButton />
           </template>
         </div>
       </div>

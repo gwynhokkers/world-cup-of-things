@@ -34,7 +34,7 @@ Migrations are in `server/db/migrations/sqlite/`. On Cloudflare, migrations do *
 
 ```bash
 # Using Wrangler (replace <database-id> with your D1 Database ID)
-bunx wrangler d1 execute <database-id> --remote --file=./server/db/migrations/sqlite/0001_initial.sql
+bunx wrangler d1 execute world-cup-of-things-db --remote --file=./server/db/migrations/sqlite/0001_initial.sql
 ```
 
 Or use the NuxtHub CLI when available:
