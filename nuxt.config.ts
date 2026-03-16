@@ -36,12 +36,12 @@ export default defineNuxtConfig({
     },
     oauth: {
       github: {
-        clientId: process.env.NUXT_OAUTH_GITHUB_CLIENT_ID || process.env.NUXT_GITHUB_CLIENT_ID,
-        clientSecret: process.env.NUXT_OAUTH_GITHUB_CLIENT_SECRET || process.env.NUXT_GITHUB_CLIENT_SECRET
+        clientId: process.env.GITHUB_CLIENT_ID,
+        clientSecret: process.env.GITHUB_CLIENT_SECRET
       },
       google: {
-        clientId: process.env.NUXT_OAUTH_GOOGLE_CLIENT_ID || process.env.NUXT_GOOGLE_CLIENT_ID,
-        clientSecret: process.env.NUXT_OAUTH_GOOGLE_CLIENT_SECRET || process.env.NUXT_GOOGLE_CLIENT_SECRET
+        clientId: process.env.GOOGLE_CLIENT_ID,
+        clientSecret: process.env.GOOGLE_CLIENT_SECRET
       }
     },
     adminGithubIds: process.env.ADMIN_GITHUB_IDS || '',

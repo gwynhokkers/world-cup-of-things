@@ -18,6 +18,7 @@
         { "binding": "BLOB", "bucket_name": "world-cup-of-things-blob" }
       ],
       "vars": {
+        "GITHUB_CLIENT_ID": "Ov23liCr08E428vJGr6M",
         "ADMIN_GITHUB_IDS": "",
         "ADMIN_GOOGLE_IDS": "",
         "SKIP_DEPENDENCY_INSTALL": "true"
@@ -37,7 +38,8 @@
         { "binding": "BLOB", "bucket_name": "world-cup-of-things-blob" }
       ],
       "vars": {
-        "ADMIN_GITHUB_IDS": "",
+        "GITHUB_CLIENT_ID": "Ov23liCr08E428vJGr6M",
+        "ADMIN_GITHUB_IDS": "33204468",
         "ADMIN_GOOGLE_IDS": "",
         "SKIP_DEPENDENCY_INSTALL": "true"
       }
