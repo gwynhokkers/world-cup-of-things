@@ -1,0 +1,44 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "world-cup-of-things",
+  "compatibility_date": "2025-07-15",
+  "pages_build_output_dir": "./.output/public",
+
+  "env": {
+    "preview": {
+      "d1_databases": [
+        {
+          "binding": "DB",
+          "database_id": "YOUR_D1_DATABASE_ID",
+          "migrations_table": "_hub_migrations",
+          "migrations_dir": "server/db/migrations/sqlite"
+        }
+      ],
+      "r2_buckets": [
+        { "binding": "BLOB", "bucket_name": "world-cup-of-things-blob" }
+      ],
+      "vars": {
+        "ADMIN_GITHUB_IDS": "",
+        "ADMIN_GOOGLE_IDS": ""
+      }
+    },
+
+    "production": {
+      "d1_databases": [
+        {
+          "binding": "DB",
+          "database_id": "YOUR_D1_DATABASE_ID",
+          "migrations_table": "_hub_migrations",
+          "migrations_dir": "server/db/migrations/sqlite"
+        }
+      ],
+      "r2_buckets": [
+        { "binding": "BLOB", "bucket_name": "world-cup-of-things-blob" }
+      ],
+      "vars": {
+        "ADMIN_GITHUB_IDS": "",
+        "ADMIN_GOOGLE_IDS": ""
+      }
+    }
+  }
+}

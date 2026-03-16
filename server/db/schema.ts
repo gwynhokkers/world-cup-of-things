@@ -5,6 +5,23 @@ import {
   uniqueIndex
 } from 'drizzle-orm/sqlite-core'
 
+// User table for nuxt-auth-utils: session in cookies, user data in DB with roles
+export const users = sqliteTable('users', {
+  id: text('id').primaryKey(),
+  name: text('name'),
+  email: text('email').notNull().unique(),
+  emailVerified: integer('email_verified', { mode: 'boolean' }).notNull().default(false),
+  image: text('image'),
+  role: text('role').notNull().default('viewer'),
+  githubId: text('github_id').unique(),
+  googleId: text('google_id').unique(),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+  updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date())
+})
+
+export type User = typeof users.$inferSelect
+export type NewUser = typeof users.$inferInsert
+
 export const competitions = sqliteTable('competitions', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   ownerId: text('owner_id').notNull(),

@@ -20,6 +20,7 @@
     "@pinia/nuxt": "^0.11.3",
     "drizzle-kit": "^0.31.0",
     "drizzle-orm": "^0.45.0",
+    "nanoid": "^5.1.6",
     "nuxt": "^4.3.1",
     "nuxt-auth-utils": "^0.5.29",
     "nuxt-authorization": "^0.3.5"

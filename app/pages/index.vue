@@ -1,5 +1,6 @@
 <script setup lang="ts">
-const { loggedIn, clear } = useUserSession()
+const { loggedIn, user, clear } = useUserSession()
+const isAdmin = computed(() => user.value?.role === 'admin')
 function clearSession() {
   clear()
 }
@@ -19,6 +20,9 @@ function clearSession() {
           <template v-if="loggedIn">
             <NuxtLink to="/create" class="text-muted hover:text-default">
               Create
+            </NuxtLink>
+            <NuxtLink v-if="isAdmin" to="/admin/users" class="text-muted hover:text-default">
+              Manage users
             </NuxtLink>
             <UButton variant="ghost" size="sm" @click="clearSession">
               Sign out

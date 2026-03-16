@@ -19,20 +19,6 @@ export default defineNuxtConfig({
     blob: true
   },
 
-  $production: {
-    hub: {
-      db: {
-        dialect: 'sqlite' as const,
-        driver: 'd1',
-        connection: { databaseId: process.env.NUXT_HUB_CLOUDFLARE_DATABASE_ID! }
-      },
-      blob: {
-        driver: 'cloudflare-r2',
-        bucketName: process.env.NUXT_HUB_CLOUDFLARE_BUCKET_NAME!
-      }
-    }
-  },
-
   image: {
     provider: 'none'
   },
@@ -44,6 +30,21 @@ export default defineNuxtConfig({
   },
 
   runtimeConfig: {
-    sessionPassword: process.env.NUXT_SESSION_PASSWORD || ''
+    sessionPassword: process.env.NUXT_SESSION_PASSWORD || '',
+    session: {
+      password: process.env.NUXT_SESSION_PASSWORD || ''
+    },
+    oauth: {
+      github: {
+        clientId: process.env.NUXT_OAUTH_GITHUB_CLIENT_ID || process.env.NUXT_GITHUB_CLIENT_ID,
+        clientSecret: process.env.NUXT_OAUTH_GITHUB_CLIENT_SECRET || process.env.NUXT_GITHUB_CLIENT_SECRET
+      },
+      google: {
+        clientId: process.env.NUXT_OAUTH_GOOGLE_CLIENT_ID || process.env.NUXT_GOOGLE_CLIENT_ID,
+        clientSecret: process.env.NUXT_OAUTH_GOOGLE_CLIENT_SECRET || process.env.NUXT_GOOGLE_CLIENT_SECRET
+      }
+    },
+    adminGithubIds: process.env.ADMIN_GITHUB_IDS || '',
+    adminGoogleIds: process.env.ADMIN_GOOGLE_IDS || ''
   }
 })

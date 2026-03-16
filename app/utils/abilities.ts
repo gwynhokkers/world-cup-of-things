@@ -3,7 +3,9 @@ export interface SessionUser {
   email?: string
   name?: string
   avatar?: string
+  image?: string
   provider?: string
+  role?: 'viewer' | 'editor' | 'admin'
 }
 
 export interface CompetitionForAuth {
@@ -37,3 +39,7 @@ export const closeRound = defineAbility(
 )
 
 export const viewCompetition = defineAbility(() => true)
+
+export const manageUsers = defineAbility((user: SessionUser | null) => {
+  return user?.role === 'admin'
+})
