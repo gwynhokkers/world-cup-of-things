@@ -19,7 +19,8 @@
       ],
       "vars": {
         "ADMIN_GITHUB_IDS": "",
-        "ADMIN_GOOGLE_IDS": ""
+        "ADMIN_GOOGLE_IDS": "",
+        "SKIP_DEPENDENCY_INSTALL": "true"
       }
     },
 
@@ -37,7 +38,8 @@
       ],
       "vars": {
         "ADMIN_GITHUB_IDS": "",
-        "ADMIN_GOOGLE_IDS": ""
+        "ADMIN_GOOGLE_IDS": "",
+        "SKIP_DEPENDENCY_INSTALL": "true"
       }
     }
   }
