@@ -19,6 +19,7 @@
       ],
       "vars": {
         "GITHUB_CLIENT_ID": "Ov23liCr08E428vJGr6M",
+        "GOOGLE_CLIENT_ID": "350192072891-fggop7qopjjog3dhqod5e4i7k4ikkfdg.apps.googleusercontent.com",
         "ADMIN_GITHUB_IDS": "",
         "ADMIN_GOOGLE_IDS": "",
         "SKIP_DEPENDENCY_INSTALL": "true"
@@ -39,6 +40,7 @@
       ],
       "vars": {
         "GITHUB_CLIENT_ID": "Ov23liCr08E428vJGr6M",
+        "GOOGLE_CLIENT_ID": "350192072891-fggop7qopjjog3dhqod5e4i7k4ikkfdg.apps.googleusercontent.com",
         "ADMIN_GITHUB_IDS": "33204468",
         "ADMIN_GOOGLE_IDS": "",
         "SKIP_DEPENDENCY_INSTALL": "true"
