@@ -29,7 +29,7 @@
     "production": {
       "d1_databases": [
         {
-          "binding": "world-cup-of-things-db",
+          "binding": "DB",
           "database_id": "180f3041-446e-463a-a8bf-57456645f230",
           "migrations_table": "_hub_migrations",
           "migrations_dir": "server/db/migrations/sqlite"

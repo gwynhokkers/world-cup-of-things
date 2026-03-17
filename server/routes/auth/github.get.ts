@@ -160,14 +160,16 @@ export default defineEventHandler(async (event) => {
 
     return sendRedirect(event, '/')
   } catch (error: unknown) {
-    const err = error as { message?: string; statusCode?: number; data?: unknown }
-    console.error('[auth/github] OAuth error:', err?.message ?? error)
+    const err = error as { message?: string; statusCode?: number; data?: unknown; cause?: unknown }
+    const message = err?.message ?? (typeof error === 'object' && error !== null && 'message' in error ? String((error as { message: unknown }).message) : String(error))
+    console.error('[auth/github] OAuth error:', message, err?.cause ?? '')
     if (err?.statusCode && err.statusCode >= 400 && err.statusCode < 500) {
       throw error
     }
     throw createError({
       statusCode: 500,
-      statusMessage: 'Failed to authenticate with GitHub'
+      statusMessage: 'Failed to authenticate with GitHub',
+      message: process.env.NODE_ENV === 'development' ? message : undefined
     })
   }
 })
