@@ -78,20 +78,8 @@ const canClose = computed(() => isOwner.value && competition.value?.status === '
 </script>
 
 <template>
-  <div class="min-h-screen bg-default">
-    <header class="border-b border-muted">
-      <div class="container mx-auto flex h-16 items-center justify-between px-4">
-        <NuxtLink to="/" class="text-xl font-semibold text-default">
-          World Cup of Things
-        </NuxtLink>
-        <nav class="flex gap-4">
-          <NuxtLink to="/">Home</NuxtLink>
-          <NuxtLink v-if="loggedIn" to="/create">Create</NuxtLink>
-        </nav>
-      </div>
-    </header>
-
-    <main v-if="competition" class="container mx-auto px-4 py-8">
+  <div>
+    <div v-if="competition" class="container mx-auto px-4 py-8">
       <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <h1 class="text-2xl font-bold text-default">
           {{ competition.title }}
@@ -164,16 +152,21 @@ const canClose = computed(() => isOwner.value && competition.value?.status === '
         <p class="mt-2 text-muted">
           Final round results are in.
         </p>
+        <NuxtLink :to="`/comp/${slug}/results`" class="mt-4 inline-block">
+          <UButton variant="outline" size="sm">
+            View full results
+          </UButton>
+        </NuxtLink>
       </div>
-    </main>
+    </div>
 
-    <main v-else class="container mx-auto px-4 py-12 text-center">
+    <div v-else class="container mx-auto px-4 py-12 text-center">
       <p class="text-muted">
         Competition not found.
       </p>
       <NuxtLink to="/" class="mt-4 inline-block text-primary">
         Back to home
       </NuxtLink>
-    </main>
+    </div>
   </div>
 </template>

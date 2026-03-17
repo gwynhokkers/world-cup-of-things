@@ -182,20 +182,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-default">
-    <header class="border-b border-muted">
-      <div class="container mx-auto flex h-16 items-center justify-between px-4">
-        <NuxtLink to="/" class="text-xl font-semibold text-default">
-          World Cup of Things
-        </NuxtLink>
-        <nav class="flex gap-4">
-          <NuxtLink to="/">Home</NuxtLink>
-          <NuxtLink to="/create">Create</NuxtLink>
-        </nav>
-      </div>
-    </header>
-
-    <main class="container mx-auto max-w-2xl px-4 py-8">
+  <div class="container mx-auto max-w-2xl px-4 py-8">
       <h1 class="text-2xl font-bold text-default">
         Create a competition
       </h1>
@@ -269,6 +256,5 @@ onUnmounted(() => {
           Create and start competition
         </UButton>
       </div>
-    </main>
   </div>
 </template>

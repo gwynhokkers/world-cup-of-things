@@ -6,6 +6,7 @@ export default defineNuxtConfig({
   modules: [
     '@nuxthub/core',
     '@nuxt/ui',
+    '@nuxt/scripts',
     '@pinia/nuxt',
     '@nuxt/image',
     'nuxt-auth-utils',
