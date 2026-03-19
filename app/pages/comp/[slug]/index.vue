@@ -2,6 +2,17 @@
 import type { Competition, Entry, Match } from '~/stores/competition'
 import { closeRound, editCompetition } from '~/utils/abilities'
 
+interface RoundVoter {
+  userId: string
+  name: string | null
+  image: string | null
+}
+
+interface CurrentRoundVotes {
+  voters: RoundVoter[]
+  userVotes: Array<{ matchId: number; entryId: number }>
+}
+
 const route = useRoute()
 const router = useRouter()
 const slug = route.params.slug as string
@@ -10,6 +21,48 @@ const { loggedIn, user } = useUserSession()
 
 await store.fetchBySlug(slug)
 const competition = computed(() => store.competition)
+
+const { data: currentRoundVotes } = await useFetch<CurrentRoundVotes>(
+  () => `/api/competitions/by-slug/${slug}/current-round-votes`,
+  { key: `comp-current-round-votes-${slug}` }
+)
+
+/** Votes cast by the current user this session (avoids refetch after voting). */
+const optimisticUserVotes = ref(new Map<number, number>())
+
+const userVotesForRound = computed(() => {
+  const list = currentRoundVotes.value?.userVotes ?? []
+  const map = new Map(list.map((v) => [v.matchId, v.entryId]))
+  for (const [matchId, entryId] of optimisticUserVotes.value) map.set(matchId, entryId)
+  return map
+})
+
+const roundVoters = computed(() => {
+  const apiVoters = currentRoundVotes.value?.voters ?? []
+  const matches = currentRoundMatches.value
+  const merged = userVotesForRound.value
+  const userCompleted =
+    user.value &&
+    matches.length > 0 &&
+    matches.every((m) => merged.has(m.id)) &&
+    !apiVoters.some((v) => v.userId === user.value!.id)
+  if (userCompleted)
+    return [
+      ...apiVoters,
+      {
+        userId: user.value!.id,
+        name: user.value!.name ?? null,
+        image: user.value!.image ?? null
+      }
+    ]
+  return apiVoters
+})
+function userVotedForEntry(matchId: number, entryId: number): boolean {
+  return userVotesForRound.value.get(matchId) === entryId
+}
+function voterDisplayName(v: RoundVoter): string {
+  return v.name?.trim() || 'Anonymous'
+}
 
 const entriesById = computed(() => {
   const c = competition.value
@@ -45,6 +98,7 @@ async function vote(matchId: number, entryId: number) {
       body: { matchId, entryId }
     })
     votedMatchIds.value = new Set([...votedMatchIds.value, matchId])
+    optimisticUserVotes.value = new Map([...optimisticUserVotes.value, [matchId, entryId]])
     await store.fetchBySlug(slug)
   } catch (e) {
     console.error(e)
@@ -145,6 +199,22 @@ async function handleDeleteCompetition() {
       <p class="mt-2 text-muted">
         {{ competition.status === 'draft' ? 'Draft' : competition.status === 'open' ? `Round ${competition.currentRound} — vote below` : 'Completed' }}
       </p>
+      <div v-if="competition.status === 'open' && roundVoters.length" class="mt-2 flex items-center gap-2">
+        <span class="text-sm text-muted">Voted this round:</span>
+        <UAvatarGroup :max="5" size="xs">
+          <UTooltip
+            v-for="v in roundVoters"
+            :key="v.userId"
+            :text="voterDisplayName(v)"
+          >
+            <UAvatar
+              :src="v.image ?? undefined"
+              :alt="voterDisplayName(v)"
+              size="xs"
+            />
+          </UTooltip>
+        </UAvatarGroup>
+      </div>
 
       <!-- Voting: current round matches -->
       <div v-if="competition.status === 'open' && currentRoundMatches.length" class="mt-8 space-y-6">
@@ -166,7 +236,12 @@ async function handleDeleteCompetition() {
                 :key="side"
                 type="button"
                 class="flex flex-col items-center rounded-lg border-2 p-4 transition-colors"
-                :class="votedMatchIds.has(match.id) ? 'border-muted' : 'border-muted hover:border-primary'"
+                :class="[
+                  votedMatchIds.has(match.id) ? 'border-muted' : 'border-muted hover:border-primary',
+                  entryFor(match, side) && userVotedForEntry(match.id, entryFor(match, side)!.id)
+                    ? 'ring-2 ring-primary bg-primary/10'
+                    : ''
+                ]"
                 :disabled="votedMatchIds.has(match.id) || votingMatchId === match.id"
                 @click="entryFor(match, side) && vote(match.id, entryFor(match, side)!.id)"
               >

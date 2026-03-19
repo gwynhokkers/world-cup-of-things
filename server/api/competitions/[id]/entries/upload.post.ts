@@ -1,5 +1,5 @@
 import { blob, ensureBlob } from '@nuxthub/blob'
-import { readFormData, createError, getRequestURL } from 'h3'
+import { readFormData, createError } from 'h3'
 import { db, schema } from '@nuxthub/db'
 import { eq } from 'drizzle-orm'
 import { editCompetition } from '~/utils/abilities'
@@ -9,7 +9,6 @@ const MAX_SIZE = '10MB'
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp']
 
 export default defineEventHandler(async (event) => {
-  console.log('[upload] handler start', { path: getRequestURL(event).pathname })
   const user = await requireUser(event)
   const id = getRouterParam(event, 'id')
   if (!id) throw createError({ statusCode: 404 })
@@ -22,17 +21,13 @@ export default defineEventHandler(async (event) => {
 
   await authorize(event, editCompetition, competition)
 
-  console.log('[upload] before readFormData', { compId })
   const form = await readFormData(event)
   const file = form.get('file') as File | null
-  console.log('[upload] after readFormData', { hasFile: !!file, fileSize: file?.size, fileName: file?.name })
   if (!file || !file.size) throw createError({ statusCode: 400, message: 'No file provided' })
 
   ensureBlob(file, { maxSize: MAX_SIZE, types: ALLOWED_TYPES })
 
   const pathname = `competitions/${compId}/entries/${Date.now()}-${file.name}`
-  console.log('[upload] before blob.put', { pathname })
   const result = await blob.put(pathname, file, { addRandomSuffix: true, prefix: '' })
-  console.log('[upload] after blob.put', { pathname: result?.pathname })
   return result
 })
