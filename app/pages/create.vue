@@ -59,7 +59,7 @@ function triggerFileInput(index: number) {
   fileInputRef.value?.click()
 }
 
-function onFileChange(event: Event) {
+async function onFileChange(event: Event) {
   const input = event.target as HTMLInputElement
   const file = input.files?.[0]
   const idx = pendingEntryIndex.value
@@ -79,8 +79,9 @@ function onFileChange(event: Event) {
   uploadError.value = null
 
   revokePreview(entry)
-  entry.file = file
-  entry.previewUrl = URL.createObjectURL(file)
+  const toStore = await compressImageForUpload(file)
+  entry.file = toStore
+  entry.previewUrl = URL.createObjectURL(toStore)
   entry.imagePath = undefined
 }
 
@@ -176,6 +177,7 @@ async function createCompetition() {
           uploadError.value = isNetwork
             ? 'Upload failed—check your connection or try a smaller image.'
             : (msg || 'Upload failed')
+          await $fetch(`/api/competitions/${comp.id}`, { method: 'DELETE' }).catch(() => {})
           return
         } finally {
           uploading.value = false
@@ -216,6 +218,7 @@ async function startCompetition() {
           uploadError.value = isNetwork
             ? 'Upload failed—check your connection or try a smaller image.'
             : (msg || 'Upload failed')
+          await $fetch(`/api/competitions/${comp.id}`, { method: 'DELETE' }).catch(() => {})
           return
         } finally {
           uploading.value = false
