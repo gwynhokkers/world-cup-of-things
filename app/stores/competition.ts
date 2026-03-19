@@ -28,6 +28,7 @@ export interface Competition {
   createdAt: Date
   entries?: Entry[]
   matches?: Match[]
+  voteCountByMatchId?: Record<number, number>
 }
 
 export const useCompetitionStore = defineStore('competition', {

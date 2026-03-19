@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import type { Competition, Entry, Match } from '~/stores/competition'
-import { closeRound } from '~/utils/abilities'
+import { closeRound, editCompetition } from '~/utils/abilities'
 
 const route = useRoute()
+const router = useRouter()
 const slug = route.params.slug as string
 const store = useCompetitionStore()
 const { loggedIn, user } = useUserSession()
@@ -74,7 +75,39 @@ const isOwner = computed(() => {
   return c && u && c.ownerId === u.id
 })
 
-const canClose = computed(() => isOwner.value && competition.value?.status === 'open' && currentRoundMatches.value.length > 0)
+const everyMatchHasVote = computed(() => {
+  const c = competition.value
+  const counts = c?.voteCountByMatchId
+  if (!counts || !currentRoundMatches.value.length) return false
+  return currentRoundMatches.value.every((m) => (counts[m.id] ?? 0) >= 1)
+})
+
+const canClose = computed(
+  () =>
+    isOwner.value &&
+    competition.value?.status === 'open' &&
+    currentRoundMatches.value.length > 0 &&
+    everyMatchHasVote.value
+)
+
+const showDeleteModal = ref(false)
+const deleting = ref(false)
+
+async function handleDeleteCompetition() {
+  const c = competition.value
+  if (!c?.id) return
+  deleting.value = true
+  try {
+    await $fetch(`/api/competitions/${c.id}`, { method: 'DELETE' })
+    store.clear()
+    await router.push('/')
+  } catch (e) {
+    console.error(e)
+  } finally {
+    deleting.value = false
+    showDeleteModal.value = false
+  }
+}
 </script>
 
 <template>
@@ -89,8 +122,21 @@ const canClose = computed(() => isOwner.value && competition.value?.status === '
             Copy share link
           </UButton>
           <Can :ability="closeRound" :args="[competition]">
-            <UButton size="sm" :disabled="!canClose" @click="handleCloseRound">
-              Close round
+            <div class="flex flex-col items-end gap-1">
+              <UButton size="sm" :disabled="!canClose" @click="handleCloseRound">
+                Close round
+              </UButton>
+              <p
+                v-if="isOwner && competition?.status === 'open' && currentRoundMatches.length > 0 && !everyMatchHasVote"
+                class="text-xs text-muted"
+              >
+                Add at least one vote to every match to close the round.
+              </p>
+            </div>
+          </Can>
+          <Can :ability="editCompetition" :args="[competition]">
+            <UButton color="error" variant="outline" size="sm" @click="showDeleteModal = true">
+              Delete competition
             </UButton>
           </Can>
         </div>
@@ -158,6 +204,27 @@ const canClose = computed(() => isOwner.value && competition.value?.status === '
           </UButton>
         </NuxtLink>
       </div>
+
+      <UModal v-model:open="showDeleteModal">
+        <template #content>
+          <div class="p-4">
+            <h3 class="text-lg font-semibold text-default">
+              Delete competition
+            </h3>
+            <p class="mt-2 text-muted">
+              Permanently delete this competition? This cannot be undone.
+            </p>
+            <div class="mt-4 flex justify-end gap-2">
+              <UButton variant="outline" :disabled="deleting" @click="showDeleteModal = false">
+                Cancel
+              </UButton>
+              <UButton color="error" :loading="deleting" @click="handleDeleteCompetition">
+                Delete
+              </UButton>
+            </div>
+          </div>
+        </template>
+      </UModal>
     </div>
 
     <div v-else class="container mx-auto px-4 py-12 text-center">

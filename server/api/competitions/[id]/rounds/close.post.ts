@@ -1,5 +1,5 @@
 import { db, schema } from '@nuxthub/db'
-import { eq, and } from 'drizzle-orm'
+import { eq, and, inArray } from 'drizzle-orm'
 import { closeRound } from '~/utils/abilities'
 import { requireUser } from '~~/server/utils/auth'
 
@@ -25,17 +25,36 @@ export default defineEventHandler(async (event) => {
   const roundMatches = matches.filter((m) => m.round === currentRound)
   if (roundMatches.length === 0) throw createError({ statusCode: 400, message: 'No matches in current round' })
 
-  // Compute winner per match from votes (majority)
+  const roundMatchIds = roundMatches.map((m) => m.id)
+  const voteRows = await db
+    .select({ matchId: schema.votes.matchId })
+    .from(schema.votes)
+    .where(inArray(schema.votes.matchId, roundMatchIds))
+  const voteCountByMatchId: Record<number, number> = {}
+  for (const mid of roundMatchIds) voteCountByMatchId[mid] = 0
+  for (const r of voteRows) voteCountByMatchId[r.matchId] = (voteCountByMatchId[r.matchId] ?? 0) + 1
+  const matchWithNoVotes = roundMatches.find((m) => (voteCountByMatchId[m.id] ?? 0) === 0)
+  if (matchWithNoVotes) {
+    throw createError({
+      statusCode: 400,
+      message: 'Every match in this round must have at least one vote before closing'
+    })
+  }
+
+  // Compute winner per match from votes (majority; ties broken at random)
   for (const match of roundMatches) {
     const rows = await db.select().from(schema.votes).where(eq(schema.votes.matchId, match.id))
     const tally: Record<number, number> = {}
     for (const r of rows) {
       tally[r.entryId] = (tally[r.entryId] ?? 0) + 1
     }
-    const winnerEntryId =
-      Object.entries(tally).length > 0
-        ? Number(Object.entries(tally).sort((a, b) => b[1] - a[1])[0][0])
-        : null
+    let winnerEntryId: number | null = null
+    if (Object.entries(tally).length > 0) {
+      const sorted = Object.entries(tally).sort((a, b) => b[1] - a[1])
+      const maxCount = sorted[0][1]
+      const tiedIds = sorted.filter(([, count]) => count === maxCount).map(([entryId]) => Number(entryId))
+      winnerEntryId = tiedIds.length === 1 ? tiedIds[0]! : tiedIds[Math.floor(Math.random() * tiedIds.length)]!
+    }
     await db.update(schema.matches).set({ winnerId: winnerEntryId }).where(eq(schema.matches.id, match.id))
   }
 

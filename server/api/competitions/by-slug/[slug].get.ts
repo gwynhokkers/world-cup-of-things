@@ -1,5 +1,5 @@
 import { db, schema } from '@nuxthub/db'
-import { eq } from 'drizzle-orm'
+import { eq, inArray } from 'drizzle-orm'
 
 export default defineEventHandler(async (event) => {
   const slug = getRouterParam(event, 'slug')
@@ -20,9 +20,24 @@ export default defineEventHandler(async (event) => {
     .where(eq(schema.matches.competitionId, competition.id))
     .orderBy(schema.matches.round, schema.matches.matchIndex)
 
+  let voteCountByMatchId: Record<number, number> | undefined
+  if (competition.status === 'open' && matchesList.length > 0) {
+    const currentRoundMatchIds = matchesList.filter((m) => m.round === competition.currentRound).map((m) => m.id)
+    if (currentRoundMatchIds.length > 0) {
+      const voteRows = await db
+        .select({ matchId: schema.votes.matchId })
+        .from(schema.votes)
+        .where(inArray(schema.votes.matchId, currentRoundMatchIds))
+      voteCountByMatchId = {}
+      for (const mid of currentRoundMatchIds) voteCountByMatchId[mid] = 0
+      for (const r of voteRows) voteCountByMatchId[r.matchId] = (voteCountByMatchId[r.matchId] ?? 0) + 1
+    }
+  }
+
   return {
     ...competition,
     entries: entriesList,
-    matches: matchesList
+    matches: matchesList,
+    ...(voteCountByMatchId !== undefined && { voteCountByMatchId })
   }
 })
