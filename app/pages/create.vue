@@ -94,7 +94,8 @@ async function uploadFile(compId: number, file: File): Promise<string> {
   form.append('file', file)
   const res = await $fetch<{ pathname: string }>(`/api/competitions/${compId}/entries/upload`, {
     method: 'POST',
-    body: form
+    body: form,
+    timeout: 90_000 // 90s for slow mobile uploads on Cloudflare
   })
   return res.pathname
 }
@@ -119,7 +120,11 @@ async function createCompetition() {
           revokePreview(e)
           e.file = null
         } catch (err: any) {
-          uploadError.value = err?.data?.message || err?.message || 'Upload failed'
+          const msg = err?.data?.message || err?.message || ''
+          const isNetwork = !msg || /fetch|network|timeout/i.test(msg)
+          uploadError.value = isNetwork
+            ? 'Upload failed—check your connection or try a smaller image.'
+            : (msg || 'Upload failed')
           return
         } finally {
           uploading.value = false
@@ -155,7 +160,11 @@ async function startCompetition() {
           revokePreview(e)
           e.file = null
         } catch (err: any) {
-          uploadError.value = err?.data?.message || err?.message || 'Upload failed'
+          const msg = err?.data?.message || err?.message || ''
+          const isNetwork = !msg || /fetch|network|timeout/i.test(msg)
+          uploadError.value = isNetwork
+            ? 'Upload failed—check your connection or try a smaller image.'
+            : (msg || 'Upload failed')
           return
         } finally {
           uploading.value = false
