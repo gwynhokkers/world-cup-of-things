@@ -3,9 +3,9 @@
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10MB
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp']
-const UPLOAD_MAX_DIMENSION = 1920
-const UPLOAD_JPEG_QUALITY = 0.82
-const COMPRESS_IF_LARGER_THAN = 1.5 * 1024 * 1024 // 1.5MB – compress so mobile uploads succeed
+const UPLOAD_MAX_DIMENSION = 1600
+const UPLOAD_JPEG_QUALITY = 0.8
+const COMPRESS_IF_LARGER_THAN = 400 * 1024 // 400KB – compress so upload body is small and reaches Cloudflare on mobile
 
 type CreateEntry = {
   title: string
