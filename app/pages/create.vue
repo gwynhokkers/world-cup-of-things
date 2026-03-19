@@ -3,6 +3,9 @@
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10MB
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp']
+const UPLOAD_MAX_DIMENSION = 1920
+const UPLOAD_JPEG_QUALITY = 0.82
+const COMPRESS_IF_LARGER_THAN = 1.5 * 1024 * 1024 // 1.5MB – compress so mobile uploads succeed
 
 type CreateEntry = {
   title: string
@@ -89,9 +92,57 @@ function removeImage(index: number) {
   entry.imagePath = undefined
 }
 
+/** Resize and compress image for upload so mobile / Cloudflare don't timeout on large camera photos. */
+async function compressImageForUpload(file: File): Promise<File> {
+  if (file.size <= COMPRESS_IF_LARGER_THAN || !ALLOWED_TYPES.includes(file.type)) return file
+  return new Promise((resolve) => {
+    const url = URL.createObjectURL(file)
+    const img = new Image()
+    img.onerror = () => {
+      URL.revokeObjectURL(url)
+      resolve(file)
+    }
+    img.onload = () => {
+      URL.revokeObjectURL(url)
+      const w = img.naturalWidth
+      const h = img.naturalHeight
+      if (w <= UPLOAD_MAX_DIMENSION && h <= UPLOAD_MAX_DIMENSION) {
+        resolve(file)
+        return
+      }
+      const scale = UPLOAD_MAX_DIMENSION / Math.max(w, h)
+      const cw = Math.round(w * scale)
+      const ch = Math.round(h * scale)
+      const canvas = document.createElement('canvas')
+      canvas.width = cw
+      canvas.height = ch
+      const ctx = canvas.getContext('2d')
+      if (!ctx) {
+        resolve(file)
+        return
+      }
+      ctx.drawImage(img, 0, 0, cw, ch)
+      canvas.toBlob(
+        (blob) => {
+          if (!blob) {
+            resolve(file)
+            return
+          }
+          const name = file.name.replace(/\.[^.]+$/i, '.jpg')
+          resolve(new File([blob], name, { type: 'image/jpeg' }))
+        },
+        'image/jpeg',
+        UPLOAD_JPEG_QUALITY
+      )
+    }
+    img.src = url
+  })
+}
+
 async function uploadFile(compId: number, file: File): Promise<string> {
+  const toUpload = await compressImageForUpload(file)
   const form = new FormData()
-  form.append('file', file)
+  form.append('file', toUpload)
   const res = await $fetch<{ pathname: string }>(`/api/competitions/${compId}/entries/upload`, {
     method: 'POST',
     body: form,
