@@ -1,39 +1,44 @@
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+
 // https://nuxt.com/docs/api/configuration/nuxt-config
+const rootDir = dirname(fileURLToPath(import.meta.url));
+
 export default defineNuxtConfig({
-  compatibilityDate: '2025-07-15',
+  compatibilityDate: "2025-07-15",
   devtools: { enabled: true },
 
   modules: [
-    '@nuxthub/core',
-    '@nuxt/ui',
-    '@nuxt/scripts',
-    '@pinia/nuxt',
-    '@nuxt/image',
-    'nuxt-auth-utils',
-    'nuxt-authorization'
+    "@nuxthub/core",
+    "@nuxt/ui",
+    "@nuxt/scripts",
+    "@pinia/nuxt",
+    "@nuxt/image",
+    "nuxt-auth-utils",
+    "nuxt-authorization"
   ],
 
-  css: ['~/assets/css/main.css'],
+  css: ["~/assets/css/main.css"],
 
   hub: {
-    db: 'sqlite',
+    db: "sqlite",
     blob: true
   },
 
   image: {
-    provider: 'none'
+    provider: "none"
   },
 
   $production: {
     image: {
-      provider: 'cloudflare'
+      provider: "cloudflare"
     }
   },
 
   runtimeConfig: {
-    sessionPassword: process.env.NUXT_SESSION_PASSWORD || '',
+    sessionPassword: process.env.NUXT_SESSION_PASSWORD || "",
     session: {
-      password: process.env.NUXT_SESSION_PASSWORD || ''
+      password: process.env.NUXT_SESSION_PASSWORD || ""
     },
     oauth: {
       github: {
@@ -45,12 +50,19 @@ export default defineNuxtConfig({
         clientSecret: process.env.GOOGLE_CLIENT_SECRET
       }
     },
-    adminGithubIds: process.env.ADMIN_GITHUB_IDS || '',
-    adminGoogleIds: process.env.ADMIN_GOOGLE_IDS || '',
-    resendApiKey: process.env.NUXT_RESEND_API_KEY || '',
-    resendFrom: process.env.NUXT_RESEND_FROM || '',
+    adminGithubIds: process.env.ADMIN_GITHUB_IDS || "",
+    adminGoogleIds: process.env.ADMIN_GOOGLE_IDS || "",
+    resendApiKey: process.env.NUXT_RESEND_API_KEY || "",
+    resendFrom: process.env.NUXT_RESEND_FROM || "",
     public: {
-      siteUrl: process.env.NUXT_PUBLIC_SITE_URL || ''
+      siteUrl: process.env.NUXT_PUBLIC_SITE_URL || ""
+    }
+  },
+
+  nitro: {
+    // Resend dynamically imports this optional peer; Nitro must resolve it for Cloudflare bundles.
+    alias: {
+      "@react-email/render": join(rootDir, "server/shims/react-email-render.ts")
     }
   }
-})
+});
