@@ -27,7 +27,17 @@ export default defineEventHandler(async (event) => {
     .select()
     .from(schema.votes)
     .where(and(eq(schema.votes.matchId, body.matchId), eq(schema.votes.userId, user.id!)))
-  if (existing.length > 0) throw createError({ statusCode: 409, message: 'Already voted in this match' })
+
+  const row = existing[0]
+  if (row) {
+    if (row.entryId === body.entryId) return row
+    const [updated] = await db
+      .update(schema.votes)
+      .set({ entryId: body.entryId })
+      .where(eq(schema.votes.id, row.id))
+      .returning()
+    return updated
+  }
 
   const [vote] = await db
     .insert(schema.votes)

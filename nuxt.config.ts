@@ -46,6 +46,11 @@ export default defineNuxtConfig({
       }
     },
     adminGithubIds: process.env.ADMIN_GITHUB_IDS || '',
-    adminGoogleIds: process.env.ADMIN_GOOGLE_IDS || ''
+    adminGoogleIds: process.env.ADMIN_GOOGLE_IDS || '',
+    resendApiKey: process.env.NUXT_RESEND_API_KEY || '',
+    resendFrom: process.env.NUXT_RESEND_FROM || '',
+    public: {
+      siteUrl: process.env.NUXT_PUBLIC_SITE_URL || ''
+    }
   }
 })

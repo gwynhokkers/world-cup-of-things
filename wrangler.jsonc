@@ -43,7 +43,9 @@
         "GOOGLE_CLIENT_ID": "350192072891-fggop7qopjjog3dhqod5e4i7k4ikkfdg.apps.googleusercontent.com",
         "ADMIN_GITHUB_IDS": "33204468",
         "ADMIN_GOOGLE_IDS": "",
-        "SKIP_DEPENDENCY_INSTALL": "true"
+        "SKIP_DEPENDENCY_INSTALL": "true",
+        "NUXT_PUBLIC_SITE_URL": "https://wcot.inkythesquid.co.uk",
+        "NUXT_RESEND_FROM": "World Cup of Things <notify@inkythesquid.co.uk>"
       }
     }
   }

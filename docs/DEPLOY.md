@@ -19,6 +19,10 @@ Set in your Cloudflare project (or `.env` for local):
 - **Google login**: `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` (or `NUXT_OAUTH_GOOGLE_CLIENT_ID` / `NUXT_OAUTH_GOOGLE_CLIENT_SECRET` for runtime).
 - **Production only**: `NUXT_HUB_CLOUDFLARE_DATABASE_ID`, `NUXT_HUB_CLOUDFLARE_BUCKET_NAME`.
 - **Optional**: `ADMIN_GITHUB_IDS` — comma-separated GitHub user IDs that get the admin role.
+- **Email (Resend):** `NUXT_RESEND_API_KEY` — API key from [Resend](https://resend.com). `NUXT_RESEND_FROM` — a verified sender address (e.g. `App Name <notifications@yourdomain.com>`). Verify your domain in the Resend dashboard (SPF/DKIM) before production sends.
+- **Email links:** `NUXT_PUBLIC_SITE_URL` — your site’s public origin (e.g. `https://your-domain.com`, no trailing slash). Used in round-notification emails so “view competition” links resolve correctly on Cloudflare.
+
+For behavior, recipients, and troubleshooting, see **[EMAIL.md](./EMAIL.md)** (round-close notifications).
 
 ## 3. Nuxt config (production)
 

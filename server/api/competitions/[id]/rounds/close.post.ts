@@ -2,6 +2,11 @@ import { db, schema } from '@nuxthub/db'
 import { eq, and, inArray } from 'drizzle-orm'
 import { closeRound } from '~/utils/abilities'
 import { requireUser } from '~~/server/utils/auth'
+import {
+  notifyRoundParticipantsAfterRoundClose,
+  type RoundNotifyOutcome
+} from '~~/server/utils/notifyRoundParticipants'
+import { runAfterResponse } from '~~/server/utils/runAfterResponse'
 
 export default defineEventHandler(async (event) => {
   const user = await requireUser(event)
@@ -15,14 +20,14 @@ export default defineEventHandler(async (event) => {
 
   await authorize(event, closeRound, competition)
 
-  const currentRound = competition.currentRound
+  const closedRound = competition.currentRound
   const matches = await db
     .select()
     .from(schema.matches)
     .where(eq(schema.matches.competitionId, compId))
     .orderBy(schema.matches.matchIndex)
 
-  const roundMatches = matches.filter((m) => m.round === currentRound)
+  const roundMatches = matches.filter((m) => m.round === closedRound)
   if (roundMatches.length === 0) throw createError({ statusCode: 400, message: 'No matches in current round' })
 
   const roundMatchIds = roundMatches.map((m) => m.id)
@@ -51,7 +56,9 @@ export default defineEventHandler(async (event) => {
     let winnerEntryId: number | null = null
     if (Object.entries(tally).length > 0) {
       const sorted = Object.entries(tally).sort((a, b) => b[1] - a[1])
-      const maxCount = sorted[0][1]
+      const top = sorted[0]
+      if (!top) continue
+      const maxCount = top[1]
       const tiedIds = sorted.filter(([, count]) => count === maxCount).map(([entryId]) => Number(entryId))
       winnerEntryId = tiedIds.length === 1 ? tiedIds[0]! : tiedIds[Math.floor(Math.random() * tiedIds.length)]!
     }
@@ -59,7 +66,10 @@ export default defineEventHandler(async (event) => {
   }
 
   const totalRounds = Math.log2(roundMatches.length * 2)
-  const nextRound = currentRound + 1
+  const nextRound = closedRound + 1
+  const outcome: RoundNotifyOutcome =
+    nextRound > totalRounds ? { kind: 'completed' } : { kind: 'nextRound', nextRound }
+
   if (nextRound > totalRounds) {
     await db.update(schema.competitions).set({ status: 'completed', currentRound: nextRound - 1 }).where(eq(schema.competitions.id, compId))
   } else {
@@ -67,7 +77,7 @@ export default defineEventHandler(async (event) => {
     const updatedRoundMatches = await db
       .select()
       .from(schema.matches)
-      .where(and(eq(schema.matches.competitionId, compId), eq(schema.matches.round, currentRound)))
+      .where(and(eq(schema.matches.competitionId, compId), eq(schema.matches.round, closedRound)))
       .orderBy(schema.matches.matchIndex)
 
     const winners = updatedRoundMatches.map((m) => m.winnerId).filter(Boolean) as number[]
@@ -87,6 +97,19 @@ export default defineEventHandler(async (event) => {
       .set({ currentRound: nextRound })
       .where(eq(schema.competitions.id, compId))
   }
+
+  const runtimeConfig = useRuntimeConfig(event)
+  const baseUrl = runtimeConfig.public.siteUrl || getRequestURL(event).origin
+
+  runAfterResponse(event, () =>
+    notifyRoundParticipantsAfterRoundClose(runtimeConfig, baseUrl, {
+      competitionId: compId,
+      slug: competition.slug,
+      title: competition.title,
+      closedRound,
+      outcome
+    })
+  )
 
   const updated = await db.select().from(schema.competitions).where(eq(schema.competitions.id, compId))
   return updated[0]
