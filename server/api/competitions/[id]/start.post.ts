@@ -34,12 +34,20 @@ export default defineEventHandler(async (event) => {
   // Round 1: pair by seed (1v2, 3v4, 5v6, ...)
   const round1Count = entriesList.length / 2
   for (let i = 0; i < round1Count; i++) {
+    const a = entriesList[i * 2]
+    const b = entriesList[i * 2 + 1]
+    if (a == null || b == null) {
+      throw createError({
+        statusCode: 400,
+        message: 'Invalid entry pairing for bracket'
+      })
+    }
     await db.insert(schema.matches).values({
       competitionId: compId,
       round: 1,
       matchIndex: i + 1,
-      entryAId: entriesList[i * 2].id,
-      entryBId: entriesList[i * 2 + 1].id
+      entryAId: a.id,
+      entryBId: b.id
     })
   }
 

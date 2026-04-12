@@ -1,165 +1,166 @@
 <script setup lang="ts">
-import type { Competition, Entry, Match } from '~/stores/competition'
-import { closeRound, editCompetition } from '~/utils/abilities'
-
-interface RoundVoter {
-  userId: string
-  name: string | null
-  image: string | null
-}
+import type { Competition, Entry, Match } from "~/stores/competition";
+import type { RoundVoter } from "~/components/competition/RoundVotersAvatars.vue";
+import {
+  everyMatchHasAtLeastOneVote,
+  mergeOptimisticUserVotes,
+  roundVotersWithOptionalCurrentUser,
+} from "~/utils/competitionPageHelpers";
 
 interface CurrentRoundVotes {
-  voters: RoundVoter[]
-  userVotes: Array<{ matchId: number; entryId: number }>
+  voters: RoundVoter[];
+  userVotes: Array<{ matchId: number; entryId: number }>;
 }
 
-const route = useRoute()
-const router = useRouter()
-const slug = route.params.slug as string
-const store = useCompetitionStore()
-const { loggedIn, user } = useUserSession()
+const route = useRoute();
+const router = useRouter();
+const slug = route.params.slug as string;
+const store = useCompetitionStore();
+const { loggedIn, user } = useUserSession();
 
-await store.fetchBySlug(slug)
-const competition = computed(() => store.competition)
+await store.fetchBySlug(slug);
+const competition = computed(() => store.competition);
 
-const { data: currentRoundVotes } = await useFetch<CurrentRoundVotes>(
-  () => `/api/competitions/by-slug/${slug}/current-round-votes`,
-  { key: `comp-current-round-votes-${slug}` }
-)
+const { data: currentRoundVotes, refresh: refreshCurrentRoundVotes } =
+  await useFetch<CurrentRoundVotes>(
+    () => `/api/competitions/by-slug/${slug}/current-round-votes`,
+    { key: `comp-current-round-votes-${slug}` },
+  );
 
 /** Votes cast by the current user this session (avoids refetch after voting). */
-const optimisticUserVotes = ref(new Map<number, number>())
+const optimisticUserVotes = ref(new Map<number, number>());
 
-const userVotesForRound = computed(() => {
-  const list = currentRoundVotes.value?.userVotes ?? []
-  const map = new Map(list.map((v) => [v.matchId, v.entryId]))
-  for (const [matchId, entryId] of optimisticUserVotes.value) map.set(matchId, entryId)
-  return map
-})
-
-const roundVoters = computed(() => {
-  const apiVoters = currentRoundVotes.value?.voters ?? []
-  const matches = currentRoundMatches.value
-  const merged = userVotesForRound.value
-  const userCompleted =
-    user.value &&
-    matches.length > 0 &&
-    matches.every((m) => merged.has(m.id)) &&
-    !apiVoters.some((v) => v.userId === user.value!.id)
-  if (userCompleted)
-    return [
-      ...apiVoters,
-      {
-        userId: user.value!.id,
-        name: user.value!.name ?? null,
-        image: user.value!.image ?? null
-      }
-    ]
-  return apiVoters
-})
-function userVotedForEntry(matchId: number, entryId: number): boolean {
-  return userVotesForRound.value.get(matchId) === entryId
-}
-function voterDisplayName(v: RoundVoter): string {
-  return v.name?.trim() || 'Anonymous'
-}
-
-const entriesById = computed(() => {
-  const c = competition.value
-  if (!c?.entries) return new Map<number, Entry>()
-  return new Map(c.entries.map((e) => [e.id, e]))
-})
+const userVotesForRound = computed(() =>
+  mergeOptimisticUserVotes(
+    currentRoundVotes.value?.userVotes ?? [],
+    optimisticUserVotes.value,
+  ),
+);
 
 const currentRoundMatches = computed(() => {
-  const c = competition.value
-  if (!c?.matches) return []
-  return c.matches.filter((m) => m.round === c.currentRound)
-})
+  const c = competition.value;
+  if (!c?.matches) return [];
+  return c.matches.filter((m) => m.round === c.currentRound);
+});
+
+const roundVoters = computed(() =>
+  roundVotersWithOptionalCurrentUser(
+    currentRoundVotes.value?.voters ?? [],
+    currentRoundMatches.value,
+    userVotesForRound.value,
+    user.value
+      ? {
+          id: user.value.id,
+          name: user.value.name ?? null,
+          image: user.value.image ?? null,
+        }
+      : null,
+  ),
+);
+
+const entriesById = computed(() => {
+  const c = competition.value;
+  if (!c?.entries) return new Map<number, Entry>();
+  return new Map(c.entries.map((e) => [e.id, e]));
+});
 
 const shareUrl = computed(() => {
-  if (import.meta.client) return window.location.origin + route.fullPath
-  return ''
-})
+  if (import.meta.client) return window.location.origin + route.fullPath;
+  return "";
+});
 
-const votedMatchIds = ref<Set<number>>(new Set())
-const votingMatchId = ref<number | null>(null)
+const votingMatchId = ref<number | null>(null);
 
-function entryFor(match: Match, side: 'A' | 'B'): Entry | null {
-  const id = side === 'A' ? match.entryAId : match.entryBId
-  return id != null ? entriesById.value.get(id) ?? null : null
+function entryFor(match: Match, side: "A" | "B"): Entry | null {
+  const id = side === "A" ? match.entryAId : match.entryBId;
+  return id != null ? (entriesById.value.get(id) ?? null) : null;
 }
 
 async function vote(matchId: number, entryId: number) {
-  if (!user.value?.id) return
-  votingMatchId.value = matchId
+  if (!user.value?.id) return;
+  if (userVotesForRound.value.get(matchId) === entryId) return;
+  votingMatchId.value = matchId;
   try {
-    await $fetch('/api/votes', {
-      method: 'POST',
-      body: { matchId, entryId }
-    })
-    votedMatchIds.value = new Set([...votedMatchIds.value, matchId])
-    optimisticUserVotes.value = new Map([...optimisticUserVotes.value, [matchId, entryId]])
-    await store.fetchBySlug(slug)
+    await $fetch("/api/votes", {
+      method: "POST",
+      body: { matchId, entryId },
+    });
+    optimisticUserVotes.value = new Map([
+      ...optimisticUserVotes.value,
+      [matchId, entryId],
+    ]);
+    await store.fetchBySlug(slug);
+    await refreshCurrentRoundVotes();
   } catch (e) {
-    console.error(e)
+    console.error(e);
   } finally {
-    votingMatchId.value = null
+    votingMatchId.value = null;
   }
 }
 
 async function handleCloseRound() {
-  if (!competition.value) return
+  if (!competition.value) return;
   try {
-    await $fetch(`/api/competitions/${competition.value.id}/rounds/close`, { method: 'POST' })
-    await store.fetchBySlug(slug)
+    await $fetch(`/api/competitions/${competition.value.id}/rounds/close`, {
+      method: "POST",
+    });
+    await store.fetchBySlug(slug);
   } catch (e) {
-    console.error(e)
+    console.error(e);
   }
 }
 
 function copyShareLink() {
   if (import.meta.client && shareUrl.value) {
-    navigator.clipboard.writeText(shareUrl.value)
+    navigator.clipboard.writeText(shareUrl.value);
   }
 }
 
 const isOwner = computed(() => {
-  const c = competition.value
-  const u = user.value
-  return c && u && c.ownerId === u.id
-})
+  const c = competition.value;
+  const u = user.value;
+  return c && u && c.ownerId === u.id;
+});
 
-const everyMatchHasVote = computed(() => {
-  const c = competition.value
-  const counts = c?.voteCountByMatchId
-  if (!counts || !currentRoundMatches.value.length) return false
-  return currentRoundMatches.value.every((m) => (counts[m.id] ?? 0) >= 1)
-})
+const everyMatchHasVote = computed(() =>
+  everyMatchHasAtLeastOneVote(
+    currentRoundMatches.value.map((m) => m.id),
+    competition.value?.voteCountByMatchId,
+  ),
+);
 
 const canClose = computed(
   () =>
     isOwner.value &&
-    competition.value?.status === 'open' &&
+    competition.value?.status === "open" &&
     currentRoundMatches.value.length > 0 &&
-    everyMatchHasVote.value
-)
+    everyMatchHasVote.value,
+);
 
-const showDeleteModal = ref(false)
-const deleting = ref(false)
+const showCloseHint = computed(
+  () =>
+    !!isOwner.value &&
+    competition.value?.status === "open" &&
+    currentRoundMatches.value.length > 0 &&
+    !everyMatchHasVote.value,
+);
+
+const showDeleteModal = ref(false);
+const deleting = ref(false);
 
 async function handleDeleteCompetition() {
-  const c = competition.value
-  if (!c?.id) return
-  deleting.value = true
+  const c = competition.value;
+  if (!c?.id) return;
+  deleting.value = true;
   try {
-    await $fetch(`/api/competitions/${c.id}`, { method: 'DELETE' })
-    store.clear()
-    await router.push('/')
+    await $fetch(`/api/competitions/${c.id}`, { method: "DELETE" });
+    store.clear();
+    await router.push("/");
   } catch (e) {
-    console.error(e)
+    console.error(e);
   } finally {
-    deleting.value = false
-    showDeleteModal.value = false
+    deleting.value = false;
+    showDeleteModal.value = false;
   }
 }
 </script>
@@ -167,116 +168,58 @@ async function handleDeleteCompetition() {
 <template>
   <div>
     <div v-if="competition" class="container mx-auto px-4 py-8">
-      <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <h1 class="text-2xl font-bold text-default">
-          {{ competition.title }}
-        </h1>
-        <div class="flex items-center gap-2">
-          <UButton variant="outline" size="sm" @click="copyShareLink">
-            Copy share link
-          </UButton>
-          <Can :ability="closeRound" :args="[competition]">
-            <div class="flex flex-col items-end gap-1">
-              <UButton size="sm" :disabled="!canClose" @click="handleCloseRound">
-                Close round
-              </UButton>
-              <p
-                v-if="isOwner && competition?.status === 'open' && currentRoundMatches.length > 0 && !everyMatchHasVote"
-                class="text-xs text-muted"
-              >
-                Add at least one vote to every match to close the round.
-              </p>
-            </div>
-          </Can>
-          <Can :ability="editCompetition" :args="[competition]">
-            <UButton color="error" variant="outline" size="sm" @click="showDeleteModal = true">
-              Delete competition
-            </UButton>
-          </Can>
-        </div>
-      </div>
+      <CompetitionPageHeader
+        :title="competition.title"
+        :competition="competition"
+        :can-close="canClose"
+        :show-close-hint="showCloseHint"
+        @copy-share="copyShareLink"
+        @close-round="handleCloseRound"
+        @delete-click="showDeleteModal = true"
+      />
 
       <p class="mt-2 text-muted">
-        {{ competition.status === 'draft' ? 'Draft' : competition.status === 'open' ? `Round ${competition.currentRound} — vote below` : 'Completed' }}
+        {{
+          competition.status === "draft"
+            ? "Draft"
+            : competition.status === "open"
+              ? `Round ${competition.currentRound} — vote below`
+              : "Completed"
+        }}
       </p>
-      <div v-if="competition.status === 'open' && roundVoters.length" class="mt-2 flex items-center gap-2">
-        <span class="text-sm text-muted">Voted this round:</span>
-        <UAvatarGroup :max="5" size="xs">
-          <UTooltip
-            v-for="v in roundVoters"
-            :key="v.userId"
-            :text="voterDisplayName(v)"
-          >
-            <UAvatar
-              :src="v.image ?? undefined"
-              :alt="voterDisplayName(v)"
-              size="xs"
-            />
-          </UTooltip>
-        </UAvatarGroup>
-      </div>
 
-      <!-- Voting: current round matches -->
-      <div v-if="competition.status === 'open' && currentRoundMatches.length" class="mt-8 space-y-6">
-        <h2 class="text-lg font-semibold text-default">
-          Round {{ competition.currentRound }} — pick a winner
-        </h2>
-        <div v-if="!loggedIn" class="rounded-lg border border-warning bg-warning/10 p-4 text-warning">
-          Sign in with GitHub or Google to vote.
-        </div>
+      <RoundVotersAvatars
+        v-if="competition.status === 'open' && roundVoters.length"
+        :voters="roundVoters"
+      />
+
+      <RoundVotingSection
+        v-if="competition.status === 'open' && currentRoundMatches.length"
+        :round-number="competition.currentRound"
+        :show-sign-in-banner="!loggedIn"
+      >
         <div class="grid gap-6 sm:grid-cols-2">
-          <div
+          <MatchVoteCard
             v-for="match in currentRoundMatches"
             :key="match.id"
-            class="rounded-xl border border-muted bg-elevated p-4"
-          >
-            <div class="grid grid-cols-2 gap-4">
-              <button
-                v-for="side in ['A', 'B']"
-                :key="side"
-                type="button"
-                class="flex flex-col items-center rounded-lg border-2 p-4 transition-colors"
-                :class="[
-                  votedMatchIds.has(match.id) ? 'border-muted' : 'border-muted hover:border-primary',
-                  entryFor(match, side) && userVotedForEntry(match.id, entryFor(match, side)!.id)
-                    ? 'ring-2 ring-primary bg-primary/10'
-                    : ''
-                ]"
-                :disabled="votedMatchIds.has(match.id) || votingMatchId === match.id"
-                @click="entryFor(match, side) && vote(match.id, entryFor(match, side)!.id)"
-              >
-                <template v-if="entryFor(match, side)">
-                  <NuxtImg
-                    v-if="entryFor(match, side)!.imagePath"
-                    :src="`/images/${entryFor(match, side)!.imagePath}`"
-                    class="h-24 w-24 rounded object-cover"
-                  />
-                  <div v-else class="flex h-24 w-24 items-center justify-center rounded bg-muted text-center text-sm text-muted">
-                    No image
-                  </div>
-                  <span class="mt-2 font-medium text-default">{{ entryFor(match, side)!.title }}</span>
-                </template>
-              </button>
-            </div>
-            <p v-if="votedMatchIds.has(match.id)" class="mt-2 text-center text-sm text-success">
-              Voted
-            </p>
-          </div>
+            :entry-a="entryFor(match, 'A')"
+            :entry-b="entryFor(match, 'B')"
+            :selected-entry-id="userVotesForRound.get(match.id)"
+            :loading="votingMatchId === match.id"
+            :interactive="loggedIn"
+            @pick="(entryId) => vote(match.id, entryId)"
+          />
         </div>
-      </div>
+      </RoundVotingSection>
 
-      <!-- Completed: show winner -->
-      <div v-if="competition.status === 'completed' && competition.matches?.length" class="mt-8">
-        <h2 class="text-lg font-semibold text-default">
-          Winner
-        </h2>
-        <p class="mt-2 text-muted">
-          Final round results are in.
-        </p>
+      <div
+        v-if="competition.status === 'completed' && competition.matches?.length"
+        class="mt-8"
+      >
+        <h2 class="text-lg font-semibold text-default">Winner</h2>
+        <p class="mt-2 text-muted">Final round results are in.</p>
         <NuxtLink :to="`/comp/${slug}/results`" class="mt-4 inline-block">
-          <UButton variant="outline" size="sm">
-            View full results
-          </UButton>
+          <UButton variant="outline" size="sm"> View full results </UButton>
         </NuxtLink>
       </div>
 
@@ -290,10 +233,18 @@ async function handleDeleteCompetition() {
               Permanently delete this competition? This cannot be undone.
             </p>
             <div class="mt-4 flex justify-end gap-2">
-              <UButton variant="outline" :disabled="deleting" @click="showDeleteModal = false">
+              <UButton
+                variant="outline"
+                :disabled="deleting"
+                @click="showDeleteModal = false"
+              >
                 Cancel
               </UButton>
-              <UButton color="error" :loading="deleting" @click="handleDeleteCompetition">
+              <UButton
+                color="error"
+                :loading="deleting"
+                @click="handleDeleteCompetition"
+              >
                 Delete
               </UButton>
             </div>
@@ -303,9 +254,7 @@ async function handleDeleteCompetition() {
     </div>
 
     <div v-else class="container mx-auto px-4 py-12 text-center">
-      <p class="text-muted">
-        Competition not found.
-      </p>
+      <p class="text-muted">Competition not found.</p>
       <NuxtLink to="/" class="mt-4 inline-block text-primary">
         Back to home
       </NuxtLink>

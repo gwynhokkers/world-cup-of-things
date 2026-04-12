@@ -28,11 +28,16 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 404, statusMessage: 'User not found' })
   }
 
+  const target = existing[0]
+  if (!target) {
+    throw createError({ statusCode: 404, statusMessage: 'User not found' })
+  }
+
   const config = useRuntimeConfig(event)
   const envAdminGithubIds = (config.adminGithubIds || '').split(',').map((s: string) => s.trim()).filter(Boolean)
   const envAdminGoogleIds = (config.adminGoogleIds || '').split(',').map((s: string) => s.trim()).filter(Boolean)
-  const isEnvAdmin = (existing[0].githubId && envAdminGithubIds.includes(existing[0].githubId)) ||
-    (existing[0].googleId && envAdminGoogleIds.includes(existing[0].googleId))
+  const isEnvAdmin = (target.githubId && envAdminGithubIds.includes(target.githubId)) ||
+    (target.googleId && envAdminGoogleIds.includes(target.googleId))
   if (isEnvAdmin) {
     throw createError({ statusCode: 403, statusMessage: 'Cannot change role of an environment-defined admin' })
   }

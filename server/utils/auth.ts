@@ -5,10 +5,12 @@ export async function getSessionUser(event: any): Promise<SessionUser | null> {
   return session?.user ?? null
 }
 
-export async function requireUser(event: any): Promise<SessionUser> {
+export type AuthenticatedUser = SessionUser & { id: string }
+
+export async function requireUser(event: any): Promise<AuthenticatedUser> {
   const user = await getSessionUser(event)
   if (!user?.id) {
     throw createError({ statusCode: 401, message: 'Unauthorized' })
   }
-  return user
+  return user as AuthenticatedUser
 }

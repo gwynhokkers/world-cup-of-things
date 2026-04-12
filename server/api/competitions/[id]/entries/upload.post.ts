@@ -1,3 +1,4 @@
+import type { BlobEnsureOptions } from '@nuxthub/core/blob'
 import { blob, ensureBlob } from '@nuxthub/blob'
 import { readFormData, createError } from 'h3'
 import { db, schema } from '@nuxthub/db'
@@ -5,8 +6,11 @@ import { eq } from 'drizzle-orm'
 import { editCompetition } from '~/utils/abilities'
 import { requireUser } from '~~/server/utils/auth'
 
-const MAX_SIZE = '10MB'
-const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp']
+// NuxtHub BlobSize only allows powers of 2 (e.g. 8MB, 16MB), not 10MB.
+const ensureBlobOpts: BlobEnsureOptions = {
+  maxSize: '16MB',
+  types: ['image/jpeg', 'image/png', 'image/webp']
+}
 
 export default defineEventHandler(async (event) => {
   const user = await requireUser(event)
@@ -25,7 +29,7 @@ export default defineEventHandler(async (event) => {
   const file = form.get('file') as File | null
   if (!file || !file.size) throw createError({ statusCode: 400, message: 'No file provided' })
 
-  ensureBlob(file, { maxSize: MAX_SIZE, types: ALLOWED_TYPES })
+  ensureBlob(file, ensureBlobOpts)
 
   const pathname = `competitions/${compId}/entries/${Date.now()}-${file.name}`
   const result = await blob.put(pathname, file, { addRandomSuffix: true, prefix: '' })
