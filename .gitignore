@@ -6,6 +6,9 @@
 .cache
 dist
 
+# Nitro/Wrangler deploy redirect (generated on build; breaks CI if committed)
+.wrangler
+
 # Node dependencies
 node_modules
 
