@@ -32,12 +32,13 @@ function onChoose(entry: Entry | null) {
   emit("pick", entry.id);
 }
 
-const hasPick = computed(
-  () =>
-    props.selectedEntryId != null &&
-    (props.entryA?.id === props.selectedEntryId ||
-      props.entryB?.id === props.selectedEntryId),
-);
+const selectedEntryTitle = computed(() => {
+  const id = props.selectedEntryId;
+  if (id == null) return null;
+  if (props.entryA?.id === id) return props.entryA.title;
+  if (props.entryB?.id === id) return props.entryB.title;
+  return null;
+});
 </script>
 
 <template>
@@ -75,6 +76,8 @@ const hasPick = computed(
         </template>
       </button>
     </div>
-    <p v-if="hasPick" class="mt-2 text-center text-sm text-muted">Your pick</p>
+    <p v-if="selectedEntryTitle" class="mt-2 text-center text-sm text-muted">
+      You have picked {{ selectedEntryTitle }}
+    </p>
   </div>
 </template>

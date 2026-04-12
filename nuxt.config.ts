@@ -54,6 +54,13 @@ export default defineNuxtConfig({
     adminGoogleIds: process.env.ADMIN_GOOGLE_IDS || "",
     resendApiKey: process.env.NUXT_RESEND_API_KEY || "",
     resendFrom: process.env.NUXT_RESEND_FROM || "",
+    /** When true (with `nuxt dev`), log in as a local dev user without OAuth */
+    devStubAuth:
+      process.env.NUXT_DEV_STUB_AUTH === "1" ||
+      process.env.NUXT_DEV_STUB_AUTH === "true",
+    devStubUserEmail: process.env.NUXT_DEV_STUB_USER_EMAIL || "dev@local.test",
+    devStubUserName: process.env.NUXT_DEV_STUB_USER_NAME || "Local Dev",
+    devStubUserRole: process.env.NUXT_DEV_STUB_USER_ROLE || "admin",
     public: {
       siteUrl: process.env.NUXT_PUBLIC_SITE_URL || ""
     }

@@ -188,18 +188,18 @@ async function handleDeleteCompetition() {
         }}
       </p>
 
-      <RoundVotersAvatars
+      <CompetitionRoundVotersAvatars
         v-if="competition.status === 'open' && roundVoters.length"
         :voters="roundVoters"
       />
 
-      <RoundVotingSection
+      <CompetitionRoundVotingSection
         v-if="competition.status === 'open' && currentRoundMatches.length"
         :round-number="competition.currentRound"
         :show-sign-in-banner="!loggedIn"
       >
         <div class="grid gap-6 sm:grid-cols-2">
-          <MatchVoteCard
+          <CompetitionMatchVoteCard
             v-for="match in currentRoundMatches"
             :key="match.id"
             :entry-a="entryFor(match, 'A')"
@@ -210,7 +210,7 @@ async function handleDeleteCompetition() {
             @pick="(entryId) => vote(match.id, entryId)"
           />
         </div>
-      </RoundVotingSection>
+      </CompetitionRoundVotingSection>
 
       <div
         v-if="competition.status === 'completed' && competition.matches?.length"
