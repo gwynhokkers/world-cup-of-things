@@ -1,6 +1,11 @@
 <script setup lang="ts">
 import type { Competition, Entry, Match } from "~/stores/competition";
 import type { RoundVoter } from "~/components/competition/RoundVotersAvatars.vue";
+import {
+  everyMatchHasAtLeastOneVote,
+  mergeOptimisticUserVotes,
+  roundVotersWithOptionalCurrentUser,
+} from "~/utils/competitionPageHelpers";
 
 interface CurrentRoundVotes {
   voters: RoundVoter[];
@@ -25,13 +30,12 @@ const { data: currentRoundVotes, refresh: refreshCurrentRoundVotes } =
 /** Votes cast by the current user this session (avoids refetch after voting). */
 const optimisticUserVotes = ref(new Map<number, number>());
 
-const userVotesForRound = computed(() => {
-  const list = currentRoundVotes.value?.userVotes ?? [];
-  const map = new Map(list.map((v) => [v.matchId, v.entryId]));
-  for (const [matchId, entryId] of optimisticUserVotes.value)
-    map.set(matchId, entryId);
-  return map;
-});
+const userVotesForRound = computed(() =>
+  mergeOptimisticUserVotes(
+    currentRoundVotes.value?.userVotes ?? [],
+    optimisticUserVotes.value,
+  ),
+);
 
 const currentRoundMatches = computed(() => {
   const c = competition.value;
@@ -39,26 +43,20 @@ const currentRoundMatches = computed(() => {
   return c.matches.filter((m) => m.round === c.currentRound);
 });
 
-const roundVoters = computed(() => {
-  const apiVoters = currentRoundVotes.value?.voters ?? [];
-  const matches = currentRoundMatches.value;
-  const merged = userVotesForRound.value;
-  const userCompleted =
-    user.value &&
-    matches.length > 0 &&
-    matches.every((m) => merged.has(m.id)) &&
-    !apiVoters.some((v) => v.userId === user.value!.id);
-  if (userCompleted)
-    return [
-      ...apiVoters,
-      {
-        userId: user.value!.id,
-        name: user.value!.name ?? null,
-        image: user.value!.image ?? null,
-      },
-    ];
-  return apiVoters;
-});
+const roundVoters = computed(() =>
+  roundVotersWithOptionalCurrentUser(
+    currentRoundVotes.value?.voters ?? [],
+    currentRoundMatches.value,
+    userVotesForRound.value,
+    user.value
+      ? {
+          id: user.value.id,
+          name: user.value.name ?? null,
+          image: user.value.image ?? null,
+        }
+      : null,
+  ),
+);
 
 const entriesById = computed(() => {
   const c = competition.value;
@@ -124,12 +122,12 @@ const isOwner = computed(() => {
   return c && u && c.ownerId === u.id;
 });
 
-const everyMatchHasVote = computed(() => {
-  const c = competition.value;
-  const counts = c?.voteCountByMatchId;
-  if (!counts || !currentRoundMatches.value.length) return false;
-  return currentRoundMatches.value.every((m) => (counts[m.id] ?? 0) >= 1);
-});
+const everyMatchHasVote = computed(() =>
+  everyMatchHasAtLeastOneVote(
+    currentRoundMatches.value.map((m) => m.id),
+    competition.value?.voteCountByMatchId,
+  ),
+);
 
 const canClose = computed(
   () =>
