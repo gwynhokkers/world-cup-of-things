@@ -7,7 +7,10 @@
 
     <UPageBody>
       <div v-if="pending" class="flex justify-center py-12">
-        <UIcon name="i-heroicons-arrow-path" class="size-6 animate-spin text-muted" />
+        <UIcon
+          name="i-heroicons-arrow-path"
+          class="size-6 animate-spin text-muted"
+        />
       </div>
       <div v-else-if="error">
         <UAlert
@@ -26,9 +29,17 @@
         >
           <template #description>
             <ul class="mt-1 list-disc list-inside text-sm space-y-0.5">
-              <li><strong>Viewer</strong> — can browse and vote in open competitions</li>
-              <li><strong>Editor</strong> — can create and edit their own competitions</li>
-              <li><strong>Admin</strong> — full access including user management</li>
+              <li>
+                <strong>Viewer</strong> — can browse and vote in open
+                competitions
+              </li>
+              <li>
+                <strong>Editor</strong> — can create and edit their own
+                competitions
+              </li>
+              <li>
+                <strong>Admin</strong> — full access including user management
+              </li>
             </ul>
           </template>
         </UAlert>
@@ -49,7 +60,7 @@
               <div class="flex-1 min-w-0">
                 <div class="flex items-center gap-2">
                   <p class="font-medium truncate">
-                    {{ u.name || 'Unnamed' }}
+                    {{ u.name || "Unnamed" }}
                   </p>
                   <UBadge
                     v-if="u.isEnvAdmin"
@@ -57,7 +68,10 @@
                     variant="subtle"
                     size="xs"
                   >
-                    <UIcon name="i-heroicons-lock-closed" class="mr-0.5 size-3" />
+                    <UIcon
+                      name="i-heroicons-lock-closed"
+                      class="mr-0.5 size-3"
+                    />
                     ENV
                   </UBadge>
                 </div>
@@ -115,70 +129,76 @@
 </template>
 
 <script setup lang="ts">
-import { manageUsers } from '~/utils/abilities'
+import { manageUsers } from "~/utils/abilities";
 
 definePageMeta({
-  middleware: 'auth'
-})
+  middleware: "auth"
+});
 
 if (await denies(manageUsers)) {
-  await navigateTo('/')
+  await navigateTo("/");
 }
 
 const roleOptions = [
-  { label: 'Viewer', value: 'viewer' },
-  { label: 'Editor', value: 'editor' },
-  { label: 'Admin', value: 'admin' }
-]
+  { label: "Viewer", value: "viewer" },
+  { label: "Editor", value: "editor" },
+  { label: "Admin", value: "admin" }
+];
 
-const updating = ref<string | null>(null)
-const toast = useToast()
+const updating = ref<string | null>(null);
+const toast = useToast();
 
 interface UserRow {
-  id: string
-  name: string | null
-  email: string
-  image: string | null
-  role: string
-  githubId: string | null
-  googleId: string | null
-  createdAt: Date | string
-  isEnvAdmin: boolean
+  id: string;
+  name: string | null;
+  email: string;
+  image: string | null;
+  role: string;
+  githubId: string | null;
+  googleId: string | null;
+  createdAt: Date | string;
+  isEnvAdmin: boolean;
 }
 
-const { data: users, pending, error, refresh } = await useFetch<UserRow[]>('/api/users', {
-  credentials: 'include'
-})
+const {
+  data: users,
+  pending,
+  error,
+  refresh
+} = await useFetch<UserRow[]>("/api/users", {
+  credentials: "include"
+});
 
 function roleBadgeColor(role: string) {
-  if (role === 'admin') return 'error' as const
-  if (role === 'editor') return 'primary' as const
-  return 'neutral' as const
+  if (role === "admin") return "warning" as const;
+  if (role === "editor") return "primary" as const;
+  return "neutral" as const;
 }
 
 function formatDate(dateStr: Date | string) {
   return new Date(dateStr).toLocaleDateString(undefined, {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric'
-  })
+    year: "numeric",
+    month: "short",
+    day: "numeric"
+  });
 }
 
 async function updateRole(userId: string, newRole: string) {
-  updating.value = userId
+  updating.value = userId;
   try {
     await $fetch(`/api/users/${userId}/role`, {
-      method: 'PUT',
+      method: "PUT",
       body: { role: newRole },
-      credentials: 'include'
-    })
-    toast.add({ title: 'Role updated', color: 'success' })
-    await refresh()
+      credentials: "include"
+    });
+    toast.add({ title: "Role updated", color: "success" });
+    await refresh();
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : 'Failed to update role'
-    toast.add({ title: 'Error', description: message, color: 'error' })
+    const message =
+      err instanceof Error ? err.message : "Failed to update role";
+    toast.add({ title: "Error", description: message, color: "error" });
   } finally {
-    updating.value = null
+    updating.value = null;
   }
 }
 </script>
